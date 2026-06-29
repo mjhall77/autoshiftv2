@@ -15,7 +15,7 @@ managedClusterSets:
           storage: '10Gi'
     labels:
       # OpenShift version for cluster deployment and image mirroring
-      openshift-version: '4.20.12'
+      openshift-version: '4.20.26'
       ### tempo
       tempo: 'true'
       tempo-subscription-name: tempo-product
