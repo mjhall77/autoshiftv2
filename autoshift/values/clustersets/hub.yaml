@@ -33,7 +33,7 @@ hubClusterSets:
         dbBackupRetention: '30d'
     labels:
       # OpenShift version for cluster deployment and image mirroring
-      openshift-version: '4.20.12'
+      openshift-version: '4.20.25'
       self-managed: 'true'
       ### OpenShift Gitops
       gitops: 'true' # is expected to be installed on all hub clusters
