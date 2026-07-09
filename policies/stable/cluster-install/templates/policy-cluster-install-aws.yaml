@@ -48,17 +48,8 @@ spec:
             {{ "{{-" }} $config := ($cm.data.config | fromYaml) {{ "}}" }}
             {{ "{{-" }} $ci := (index $config "clusterInstall" | default dict) {{ "}}" }}
             {{ "{{-" }} $platform := (index $ci "platform" | default "baremetal") {{ "}}" }}
-<<<<<<< HEAD
-            {{ "{{-" }} if and (eq (index $ci "createCluster" | default "") "true") (eq $platform "aws") (or (empty $mc) (eq $mcOwningNs $cm.metadata.namespace)) {{ "}}" }}
-            {{ "{{-" }} $baseDomain := (index $ci "baseDomain" | default "") {{ "}}" }}
-            {{ "{{-" }} if not $baseDomain {{ "}}" }}
-            {{ "{{-" }} $hubDNS := (lookup "config.openshift.io/v1" "DNS" "" "cluster") | default dict {{ "}}" }}
-            {{ "{{-" }} $baseDomain = (splitList "." (dig "spec" "baseDomain" "" $hubDNS) | rest | join ".") {{ "}}" }}
-            {{ "{{-" }} end {{ "}}" }}
-=======
             {{ "{{-" }} if and (eq (index $ci "createCluster" | default "") "true") (eq $platform "aws") (not (empty (index $config "aws"))) {{ "}}" }}
             {{ "{{-" }} $baseDomain := (index $ci "baseDomain") {{ "}}" }}
->>>>>>> upstream/feature/vmware-cluster-install
             {{ "{{-" }} $openshiftVersion := (index $ci "openshiftVersion") {{ "}}" }}
             {{ "{{-" }} $installAttemptsLimit := (index $ci "installAttemptsLimit" | default 3 | toInt) {{ "}}" }}
             {{ "{{-" }} $cpuArch := (index $ci "cpuArch" | default "x86_64") {{ "}}" }}
