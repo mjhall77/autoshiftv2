@@ -33,7 +33,7 @@ hubClusterSets:
         dbBackupRetention: '30d'
     labels:
       # OpenShift version for cluster deployment and image mirroring
-      openshift-version: '4.20.12'
+      openshift-version: '4.20.25'
       self-managed: 'true'
       ### OpenShift Gitops
       gitops: 'true' # is expected to be installed on all hub clusters
@@ -88,21 +88,21 @@ hubClusterSets:
       node-maintenance-source-namespace: openshift-marketplace
       node-maintenance-version: 'node-maintenance-operator.v5.5.0'
       ### Tempo
-      tempo: 'true'
+      tempo: 'false'
       tempo-subscription-name: tempo-product
       tempo-channel: stable
       tempo-source: redhat-operators
       tempo-source-namespace: openshift-marketplace
       # tempo-version: 'tempo-operator.v0.19.0-1'
       ### Kiali
-      kiali: 'true'
+      kiali: 'false'
       kiali-subscription-name: kiali-ossm
       kiali-channel: stable
       kiali-source: redhat-operators
       kiali-source-namespace: openshift-marketplace
       # kiali-version: 'kiali-operator.v2.17.2'
       ### Servicemesh3 Operator
-      servicemesh3operator: 'true'
+      servicemesh3operator: 'false'
       servicemesh3operator-subscription-name: servicemeshoperator3
       servicemesh3operator-channel: stable
       servicemesh3operator-source: redhat-operators
@@ -142,7 +142,7 @@ hubClusterSets:
       # Specify the names of your Peer files here
       metallb-peer-1: ''
       ### AAP
-      aap: 'true'
+      aap: 'false'
       aap-subscription-name: ansible-automation-platform-operator
       aap-channel: stable-2.6
       aap-install-plan-approval: Automatic
@@ -170,7 +170,7 @@ hubClusterSets:
       master-kube-reserved-cpu: '500m'
       master-eviction-memory: '500Mi'
       ### Infrastructure Nodes
-      infra-nodes: '3'
+      infra-nodes: ''
       infra-nodes-provider: aws
       infra-nodes-instance-type: 'm5.2xlarge'
       infra-nodes-numcpu: ''
@@ -198,7 +198,7 @@ hubClusterSets:
       worker-kube-reserved-cpu: '250m'
       worker-eviction-memory: '500Mi'
       ### Storage Nodes
-      storage-nodes: '3'
+      storage-nodes: ''
       # storage-nodes-zone-1: 'us-east-2a'
       # storage-nodes-zone-2: 'us-east-2b'
       # storage-nodes-zone-3: 'us-east-2c'
@@ -234,7 +234,7 @@ hubClusterSets:
       local-storage-source: redhat-operators
       local-storage-source-namespace: openshift-marketplace
       ### OpenShift Data Foundation
-      odf: 'true'
+      odf: 'false'
       odf-subscription-name: odf-operator
       # odf-version: 'odf-operator.v4.18.11-rhodf'
       odf-multi-cloud-gateway: standard
@@ -285,14 +285,14 @@ hubClusterSets:
       acs-network-policies: Enabled
       acs-default-policies: 'true'
       ### Developer Spaces
-      dev-spaces: 'true'
+      dev-spaces: 'false'
       dev-spaces-subscription-name: devspaces
       # dev-spaces-version: 'devspaces.v3.21.0'
       dev-spaces-channel: stable
       dev-spaces-source: redhat-operators
       dev-spaces-source-namespace: openshift-marketplace
       ### Developer Hub
-      dev-hub: 'true'
+      dev-hub: 'false'
       dev-hub-subscription-name: rhdh
       # dev-hub-version: 'rhdh.v1.5.0'
       dev-hub-channel: fast-1.9
@@ -306,14 +306,14 @@ hubClusterSets:
       pipelines-source: redhat-operators
       pipelines-source-namespace: openshift-marketplace
       ### Trusted Artifact Signer
-      tas: 'true'
+      tas: 'false'
       tas-subscription-name: rhtas-operator
       # tas-version: 'rhtas-operator.v1.2.0'
       tas-channel:  stable
       tas-source: redhat-operators
       tas-source-namespace: openshift-marketplace
       ### Quay
-      quay: 'true'
+      quay: 'false'
       quay-subscription-name: quay-operator
       # quay-version: 'quay-operator.v3.15.0'
       quay-channel: stable-3.17

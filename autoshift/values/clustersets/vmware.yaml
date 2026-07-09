@@ -1,6 +1,6 @@
 # Spoke Cluster Sets with Feature Flags. Blank will remove
 managedClusterSets:
-  managed:
+  vmware:
     config:
       uwm:
         # storageClass: 'gp3-csi'            # Omit to use cluster default StorageClass
@@ -15,28 +15,28 @@ managedClusterSets:
           storage: '10Gi'
     labels:
       # OpenShift version for cluster deployment and image mirroring
-      openshift-version: '4.20.25'
+      openshift-version: '4.20.26'
       ### tempo
-      tempo: 'true'
+      tempo: 'false'
       tempo-subscription-name: tempo-product
       tempo-channel: stable
       tempo-source: redhat-operators
       tempo-source-namespace: openshift-marketplace
       # tempo-version: 'tempo-operator.v0.19.0-1'
       ### kiali
-      kiali: 'true'
+      kiali: 'false'
       kiali-subscription-name: kiali-ossm
       kiali-channel: stable
       kiali-source: redhat-operators
       kiali-source-namespace: openshift-marketplace
-      # kiali-version: 'kiali-operator.v2.17.2'
+      kiali-version: 'kiali-operator.v2.17.2'
       ### servicemesh3
       servicemesh3operator: 'true'
       servicemesh3operator-subscription-name: servicemeshoperator3
       servicemesh3operator-channel: stable
       servicemesh3operator-source: redhat-operators
       servicemesh3operator-source-namespace: openshift-marketplace
-        # servicemesh3operator-version: 'servicemeshoperator3.v3.3.1'
+      servicemesh3operator-version: 'servicemeshoperator3.v3.3.1'
       servicemesh3-ambient: 'true'
       ### Master Node Kubelet Configuration
       master-nodes: 'true'
@@ -109,7 +109,7 @@ managedClusterSets:
       dev-spaces-source: redhat-operators
       dev-spaces-source-namespace: openshift-marketplace
       ### Developer Hub
-      dev-hub: 'true'
+      dev-hub: 'false'
       dev-hub-subscription-name: rhdh
       dev-hub-channel: fast-1.9
       dev-hub-source: '' #redhat-operators
@@ -121,7 +121,7 @@ managedClusterSets:
       pipelines-source: '' #redhat-operators
       pipelines-source-namespace: '' #openshift-marketplace
       ### Trusted Artifact Signer
-      tas: 'true'
+      tas: 'false'
       tas-subscription-name: rhtas-operator
       tas-channel:  '' #latest
       tas-source: '' #redhat-operators
@@ -188,16 +188,3 @@ managedClusterSets:
       external-secrets-operator-channel: stable-v1
       external-secrets-operator-source: redhat-operators
       external-secrets-operator-source-namespace: openshift-marketplace
-      ### OpenShift Virtualization
-      virt: 'false'
-      virt-channel: stable
-      virt-subscription-name: kubevirt-hyperconverged
-      virt-source: redhat-operators
-      virt-source-namespace: openshift-marketplace
-      ### Migration Toolkit for Openshift Virtualization
-      mtv: 'false'
-      mtv-subscription-name: mtv-operator
-      mtv-channel: release-v2.10
-      mtv-source: redhat-operators
-      mtv-source-namespace: openshift-marketplace
-
