@@ -164,7 +164,7 @@ managedClusterSets:
       uwm: 'true'
       ### Compliance Operator Stig Apply
       compliance: 'true'
-      compliance-auto-remediate: 'true'
+      compliance-auto-remediate: 'false'
       compliance-subscription-name: compliance-operator
       compliance-source: redhat-operators
       compliance-source-namespace: openshift-marketplace
