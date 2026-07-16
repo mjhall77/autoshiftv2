@@ -120,7 +120,7 @@ clusters:
               datastore: /AJ/datastore/vsan-cl1
               networks:
                 - 1010_INF_RH_OCP
-              resourcePool: /AJ/host/Services-CL1/Resources
+              resourcePool: /AJ/host/Services-CL1/Resources/OCP
               # folder: /Datacenter/vm/openshift        # optional
 
         # --- Control Plane sizing ---
