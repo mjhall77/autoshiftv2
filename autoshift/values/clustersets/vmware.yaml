@@ -31,7 +31,7 @@ managedClusterSets:
       kiali-source-namespace: openshift-marketplace
       kiali-version: 'kiali-operator.v2.17.2'
       ### servicemesh3
-      servicemesh3operator: 'true'
+      servicemesh3operator: 'false'
       servicemesh3operator-subscription-name: servicemeshoperator3
       servicemesh3operator-channel: stable
       servicemesh3operator-source: redhat-operators
