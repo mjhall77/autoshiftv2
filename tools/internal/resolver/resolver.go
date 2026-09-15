@@ -47,6 +47,16 @@ func splitAPIVersion(apiVersion string) (group, version string) {
 	return "", apiVersion
 }
 
+// toRuntimeObjects converts a slice of unstructured resources to runtime.Object
+// pointers for seeding a fake dynamic client.
+func toRuntimeObjects(resources []unstructured.Unstructured) []runtime.Object {
+	objs := make([]runtime.Object, 0, len(resources))
+	for i := range resources {
+		objs = append(objs, resources[i].DeepCopy())
+	}
+	return objs
+}
+
 // buildRegistryFromResources derives the GVR→ListKind map and APIResourceList
 // from a set of unstructured objects. Adding a YAML stub to testdata/ is
 // sufficient to register that type — no code changes required.
@@ -119,7 +129,13 @@ func NewResolver(localResources []unstructured.Unstructured) (*Resolver, error) 
 	listKinds, apiLists := buildRegistryFromResources(localResources)
 
 	scheme := runtime.NewScheme()
-	dynClient := fakedynamic.NewSimpleDynamicClientWithCustomListKinds(scheme, listKinds)
+	// Seed the fake dynamic client with the resources too (not just
+	// WithLocalResources). The local-resource lookup path matches namespace
+	// exactly, so an all-namespaces list (lookup ... "" "" <label>, used by the
+	// multi-deployment cluster-install policies) never matches a namespaced
+	// resource there and falls through to the dynamic client — which must hold
+	// the objects for that cross-namespace list to resolve.
+	dynClient := fakedynamic.NewSimpleDynamicClientWithCustomListKinds(scheme, listKinds, toRuntimeObjects(localResources)...)
 	fakeClientset := fakeclientset.NewSimpleClientset()
 
 	if fakeDisc, ok := fakeClientset.Discovery().(*fakediscovery.FakeDiscovery); ok {
@@ -154,10 +170,16 @@ func (r *Resolver) SetLocalResources(resources []unstructured.Unstructured) {
 
 // HubContext is the template context struct passed to the ACM resolver. The
 // field names must be exported and match what hub templates reference:
-// .ManagedClusterName, .ManagedClusterLabels.
+// .ManagedClusterName, .ManagedClusterLabels, .PolicyMetadata.
+//
+// PolicyMetadata mirrors the map ACM injects on the hub (name, namespace,
+// annotations, labels of the Policy). It is populated per-document by
+// ResolvePolicy — PolicyGenerator-based policies read .PolicyMetadata.namespace
+// to locate the deployment's policy namespace without a Helm value.
 type HubContext struct {
 	ManagedClusterName   string
 	ManagedClusterLabels map[string]string
+	PolicyMetadata       map[string]interface{}
 }
 
 // ResolvePolicyResult holds the outcome of resolving one multi-document YAML.
@@ -205,6 +227,7 @@ func (r *Resolver) ResolvePolicy(rawYAML string, ctx HubContext) ResolvePolicyRe
 		}
 
 		policyName, _ := nestedString(obj, "metadata", "name")
+		policyNamespace, _ := nestedString(obj, "metadata", "namespace")
 
 		// JSON-marshal the Policy for the resolver (it expects JSON input).
 		jsonBytes, err := json.Marshal(obj)
@@ -214,7 +237,18 @@ func (r *Resolver) ResolvePolicy(rawYAML string, ctx HubContext) ResolvePolicyRe
 			continue
 		}
 
-		result, err := r.inner.ResolveTemplate(jsonBytes, ctx, &templates.ResolveOptions{})
+		// Populate PolicyMetadata per-document so hub templates can read
+		// .PolicyMetadata.namespace etc. (ACM injects this on the real hub).
+		docCtx := ctx
+		metadata, _ := obj["metadata"].(map[string]interface{})
+		docCtx.PolicyMetadata = map[string]interface{}{
+			"name":        policyName,
+			"namespace":   policyNamespace,
+			"annotations": mapOrEmpty(metadata, "annotations"),
+			"labels":      mapOrEmpty(metadata, "labels"),
+		}
+
+		result, err := r.inner.ResolveTemplate(jsonBytes, docCtx, &templates.ResolveOptions{})
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("%s: %v", policyName, err))
 			resolved = append(resolved, doc) // pass through the original
@@ -250,7 +284,13 @@ func NewSpokeResolver(localResources []unstructured.Unstructured) (*Resolver, er
 	listKinds, apiLists := buildRegistryFromResources(localResources)
 
 	scheme := runtime.NewScheme()
-	dynClient := fakedynamic.NewSimpleDynamicClientWithCustomListKinds(scheme, listKinds)
+	// Seed the fake dynamic client with the resources too (not just
+	// WithLocalResources). The local-resource lookup path matches namespace
+	// exactly, so an all-namespaces list (lookup ... "" "" <label>, used by the
+	// multi-deployment cluster-install policies) never matches a namespaced
+	// resource there and falls through to the dynamic client — which must hold
+	// the objects for that cross-namespace list to resolve.
+	dynClient := fakedynamic.NewSimpleDynamicClientWithCustomListKinds(scheme, listKinds, toRuntimeObjects(localResources)...)
 	fakeClientset := fakeclientset.NewSimpleClientset()
 
 	if fakeDisc, ok := fakeClientset.Discovery().(*fakediscovery.FakeDiscovery); ok {
@@ -368,6 +408,18 @@ func nestedString(obj map[string]interface{}, keys ...string) (string, bool) {
 		current = next
 	}
 	return "", false
+}
+
+// mapOrEmpty returns obj[key] as a map, or an empty map if absent/not a map.
+// Used to give hub templates a non-nil .PolicyMetadata.annotations/.labels.
+func mapOrEmpty(obj map[string]interface{}, key string) map[string]interface{} {
+	if obj == nil {
+		return map[string]interface{}{}
+	}
+	if m, ok := obj[key].(map[string]interface{}); ok {
+		return m
+	}
+	return map[string]interface{}{}
 }
 
 // joinYAMLDocuments reassembles resolved documents into a multi-document YAML

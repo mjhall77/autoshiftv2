@@ -63,22 +63,16 @@ command -v helm >/dev/null 2>&1 || error "helm is required"
 oc whoami >/dev/null 2>&1 || error "Not logged in to OpenShift. Run: oc login"
 
 GITOPS_NAMESPACE="${GITOPS_NAMESPACE:-openshift-gitops}"
-
-log "Installing OpenShift GitOps..."
-helm upgrade --install openshift-gitops ${OCI_BOOTSTRAP_REPO}/openshift-gitops \
-    --version ${VERSION} \
-    --set gitops.argoNamespace="${GITOPS_NAMESPACE}" \
-    -n "${GITOPS_NAMESPACE}-operator" \
-    --create-namespace \
-    --wait \
-    --timeout 10m
-
-log "✓ OpenShift GitOps installed"
-echo ""
+# Optional: override the CRD-wait Job's CLI image. The charts default to the in-cluster registry
+# (image-registry.openshift-image-registry.svc:5000/openshift/cli:latest), which can't be pulled on
+# clusters without the internal image registry (e.g. bare metal). To fix, run with:
+#   CLI_IMAGE=registry.redhat.io/openshift4/ose-cli:latest ./install-bootstrap.sh   (or a mirror)
+CLI_IMAGE="${CLI_IMAGE:-}"
 
 log "Installing Advanced Cluster Management..."
 helm upgrade --install advanced-cluster-management ${OCI_BOOTSTRAP_REPO}/advanced-cluster-management \
     --version ${VERSION} \
+    ${CLI_IMAGE:+--set image="${CLI_IMAGE}"} \
     --create-namespace \
     --wait \
     --timeout 15m
@@ -91,14 +85,28 @@ oc wait --for=condition=Complete multiclusterhub multiclusterhub \
     -n open-cluster-management --timeout=900s 2>/dev/null || \
     warn "MultiClusterHub readiness check timed out - check status manually with: oc get mch -n open-cluster-management"
 
+log "Installing OpenShift GitOps..."
+helm upgrade --install openshift-gitops ${OCI_BOOTSTRAP_REPO}/openshift-gitops \
+    --version ${VERSION} \
+    --set gitops.argoNamespace="${GITOPS_NAMESPACE}" \
+    ${CLI_IMAGE:+--set image="${CLI_IMAGE}"} \
+    -n "${GITOPS_NAMESPACE}-operator" \
+    --create-namespace \
+    --wait \
+    --timeout 10m
+
+log "✓ OpenShift GitOps installed"
+echo ""
+
+
 echo ""
 log "========================================="
 log "Bootstrap installation complete!"
 log "========================================="
 echo ""
 log "Next steps:"
-echo "  1. Verify GitOps: oc get pods -n openshift-gitops"
-echo "  2. Verify ACM: oc get mch -n open-cluster-management"
+echo "  1. Verify ACM: oc get mch -n open-cluster-management"
+echo "  2. Verify GitOps: oc get pods -n openshift-gitops"
 echo "  3. Install AutoShift: ./install-autoshift.sh"
 INSTALL_EOF
 
@@ -245,11 +253,16 @@ case "$VALUES_FILE" in
 esac
 
 # Build values override
-VALUES_OVERRIDE="# Enable OCI registry mode for ApplicationSet
-        autoshiftOciRegistry: true
+VALUES_OVERRIDE="# Where the policy charts are published, and the value that selects OCI mode.
+        # Change this if you release your own charts.
         autoshiftOciRepo: ${OCI_REPO}/policies
-        autoshiftOciVersion: \"${VERSION}\"
         gitopsNamespace: ${GITOPS_NAMESPACE}"
+
+# autoshiftOciVersion is injected from the Application's own targetRevision rather than repeated,
+# so the chart version and the policy version cannot drift apart.
+OCI_VERSION_PARAM="      parameters:
+        - name: autoshiftOciVersion
+          value: \$ARGOCD_APP_SOURCE_TARGET_REVISION"
 
 if [ "$VERSIONED" = true ]; then
     VALUES_OVERRIDE="${VALUES_OVERRIDE}
@@ -289,6 +302,7 @@ spec:
       valueFiles:
 ${VALUEFILES_YAML}      values: |
         ${VALUES_OVERRIDE}
+${OCI_VERSION_PARAM}
   destination:
     server: https://kubernetes.default.svc
     namespace: ${GITOPS_NAMESPACE}
@@ -372,7 +386,7 @@ AutoShift provides a complete Infrastructure-as-Code solution for OpenShift usin
                          ↓
 ┌─────────────────────────────────────────────────────────┐
 │  Phase 3: Policy Deployment (via ApplicationSet)       │
-│  ├─ ACM Policy Charts from OCI Registry                │
+│  ├─ ACM Policies from OCI Registry                     │
 │  ├─ policies/stable/openshift-gitops (takes over GitOps)      │
 │  └─ policies/stable/advanced-cluster-management (takes over)  │
 └─────────────────────────────────────────────────────────┘
@@ -461,6 +475,12 @@ oc get multiclusterhub -n open-cluster-management
 oc wait --for=condition=Complete multiclusterhub multiclusterhub \
   -n open-cluster-management --timeout=900s
 ```
+
+> **Bare metal / no internal registry:** the CRD-wait Job defaults to the in-cluster CLI image
+> (`image-registry.openshift-image-registry.svc:5000/openshift/cli:latest`). If the internal image
+> registry is not enabled, add `--set image=registry.redhat.io/openshift4/ose-cli:latest` (or your
+> mirrored equivalent) to both bootstrap `helm upgrade` commands above, or run `install-bootstrap.sh`
+> with `CLI_IMAGE=registry.redhat.io/openshift4/ose-cli:latest`.
 
 #### Step 3: Deploy AutoShift
 
@@ -563,16 +583,19 @@ cat >> "$ARTIFACTS_DIR/INSTALL.md" << 'GUIDE_EOF'
         - values/clustersets/hub.yaml          # Or other clusterset profile
         - values/clustersets/managed.yaml      # Add managed spoke clusters
       values: |
-        # Enable OCI mode for policy deployment
-        autoshiftOciRegistry: true
+        # Where the policy charts are published, and the value that selects OCI mode.
+        # Change this if you release your own charts.
 GUIDE_EOF
 
 cat >> "$ARTIFACTS_DIR/INSTALL.md" << GUIDE_VERSION
         autoshiftOciRepo: oci://${REGISTRY}/${REGISTRY_NAMESPACE}/policies
-        autoshiftOciVersion: "${VERSION}"
 GUIDE_VERSION
 
 cat >> "$ARTIFACTS_DIR/INSTALL.md" << 'GUIDE_EOF'
+      # Injected from this Application's targetRevision, so the release is pinned once.
+      parameters:
+        - name: autoshiftOciVersion
+          value: $ARGOCD_APP_SOURCE_TARGET_REVISION
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops
