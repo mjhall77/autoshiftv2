@@ -59,7 +59,7 @@ clusters:
         createCluster: 'true'
         platform: vmware
         baseDomain: services.vibrintlabs.net
-        openshiftVersion: '4.20.26'
+        openshiftVersion: '4.22.8'
         # cpuArch: x86_64                           # default: x86_64
         openshiftChannel: stable                     # ClusterImageSet channel label
         # clusterImageSet: ''                        # optional, overrides openshiftVersion
