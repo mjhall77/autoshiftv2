@@ -24,7 +24,7 @@ AutoShift provisions clusters through Red Hat Advanced Cluster Management polici
 3. **policy-cluster-install-vmware** - Creates Secrets (vCenter credentials, CA, pull secret, install-config), `ClusterDeployment`, `MachinePool`, and `ManagedCluster` for Hive installer-provisioned infrastructure install
 
 **vSphere (`platform: vmware`):**
-3. **policy-cluster-install-vmware** - Creates Secrets (vCenter creds, CA, pull secret, install-config), ClusterDeployment, MachinePool, and ManagedCluster for Hive IPI install
+3. **policy-cluster-install-vmware** - Creates Secrets (vCenter creds, CA, pull secret, install-config), ClusterDeployment, MachinePool, and ManagedCluster for Hive Installer Provisioned Infrastructure install
 
 Each policy depends on the previous one being Compliant before it runs.
 
